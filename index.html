@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIF + Audio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 { margin-bottom: 20px; font-size: 1.5rem; }
+    .inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 500px;
+    }
+    input {
+      padding: 10px 14px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #16213e;
+      color: #e0e0e0;
+      font-size: 0.95rem;
+      width: 100%;
+    }
+    input:focus { outline: none; border-color: #e94560; }
+    button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      background: #e94560;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #c73652; }
+    .player {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 600px;
+    }
+    .player.active { display: flex; }
+    #gif-display {
+      max-width: 100%;
+      max-height: 70vh;
+      border-radius: 12px;
+      object-fit: contain;
+    }
+    .yt-audio {
+      width: 300px;
+      height: 170px;
+      border-radius: 8px;
+      opacity: 0.08;
+    }
+    .controls { display: flex; gap: 10px; }
+    .controls button { padding: 8px 16px; font-size: 0.85rem; }
+    .controls button.secondary { background: #444; }
+    .controls button.secondary:hover { background: #555; }
+  </style>
+</head>
+<body>
+  <h1>GIF + YouTube Audio</h1>
+
+  <div class="inputs">
+    <input type="text" id="gif-url" placeholder="URL del GIF">
+    <input type="text" id="yt-url" placeholder="URL del video de YouTube">
+    <button id="play-btn" onclick="start()">Reproducir</button>
+  </div>
+
+  <div class="player" id="player">
+    <img id="gif-display" src="" alt="GIF">
+    <iframe id="yt-frame" class="yt-audio" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <div class="controls">
+      <button id="pause-btn" onclick="togglePause()">Pausar Audio</button>
+      <button class="secondary" onclick="stop()">Detener</button>
+    </div>
+  </div>
+
+  <script>
+    let isPaused = false;
+
+    function extractVideoId(url) {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+      ];
+      for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+      }
+      return null;
+    }
+
+    function start() {
+      const gifUrl = document.getElementById('gif-url').value.trim();
+      const ytUrl = document.getElementById('yt-url').value.trim();
+      const videoId = extractVideoId(ytUrl);
+
+      if (!gifUrl) return alert('Ingresa la URL del GIF');
+      if (!videoId) return alert('URL de YouTube no vÃ¡lida');
+
+      document.getElementById('gif-display').src = gifUrl;
+      document.getElementById('player').classList.add('active');
+
+      const frame = document.getElementById('yt-frame');
+      frame.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&loop=1&playlist=' + videoId + '&controls=0&modestbranding=1&rel=0';
+      isPaused = false;
+      document.getElementById('pause-btn').textContent = 'Pausar Audio';
+    }
+
+    function togglePause() {
+      const frame = document.getElementById('yt-frame');
+      if (!frame.contentWindow) return;
+      if (isPaused) {
+        frame.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        isPaused = false;
+        document.getElementById('pause-btn').textContent = 'Pausar Audio';
+      } else {
+        frame.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        isPaused = true;
+        document.getElementById('pause-btn').textContent = 'Reanudar Audio';
+      }
+    }
+
+    function stop() {
+      document.getElementById('yt-frame').src = '';
+      document.getElementById('player').classList.remove('active');
+      document.getElementById('gif-display').src = '';
+    }
+  </script>
+</body>
+</html>
